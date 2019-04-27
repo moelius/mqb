@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const workersCount = 100
+const workersCount = 10
 const messagesCount = 1000
 
 var onResponseCallback = func(task *mqb.AmqpTask, corrID string, results chan []byte) error {
@@ -70,7 +70,7 @@ func main() {
 
 			results := make(chan []byte)
 			corrID := fmt.Sprintf("client-%d", w)
-			_, err = server.NewConsumer(context.Background(), consumerOptions, onResponseCallback, mqb.CallbackMaxWorkers(1), mqb.CallbackArg(corrID), mqb.CallbackArg(results))
+			_, err = server.NewConsumer(context.Background(), consumerOptions, onResponseCallback, mqb.CallbackMaxWorkers(10), mqb.CallbackArg(corrID), mqb.CallbackArg(results))
 			if err != nil {
 				log.Fatal(err)
 			}

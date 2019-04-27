@@ -10,6 +10,7 @@ import (
 	"syscall"
 )
 
+//Logger logger interface
 var Logger LoggerInterface
 
 //CallbackOption callback option func
@@ -37,6 +38,7 @@ var defaultCallbackOptions = CallbackOptions{MaxWorkers: 1}
 
 //Server mqb server struct
 type Server struct {
+	sync.Mutex
 	broker  BrokerInterface
 	osSig   chan os.Signal
 	ctx     context.Context
@@ -73,6 +75,8 @@ func (server *Server) WithLogger(logger LoggerInterface) {
 
 //NewConsumer make new amqpConsumer
 func (server *Server) NewConsumer(ctx context.Context, consumerOptions interface{}, callback interface{}, callbackOptions ...CallbackOption) (consumer ConsumerInterface, err error) {
+	server.Lock()
+	defer server.Unlock()
 	opts := defaultCallbackOptions
 	for _, o := range callbackOptions {
 		o(&opts)
@@ -93,10 +97,12 @@ func (server *Server) NewConsumer(ctx context.Context, consumerOptions interface
 
 //NewProducer make new producer
 func (server *Server) NewProducer(producerOptions interface{}) (err error) {
+	server.Lock()
+	defer server.Unlock()
 	return newProducer(server.getBroker(), producerOptions)
 }
 
-//ListenAndServe serve and listen for os signals to stop server
+//ListenAndServe starts server and listen for os signals to stop server
 func (server *Server) ListenAndServe() (err error) {
 	if err = server.Serve(); err != nil {
 		return

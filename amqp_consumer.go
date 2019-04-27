@@ -21,7 +21,7 @@ type extAmqpChannelInterface interface {
 	Publish(exchange string, key string, mandatory bool, immediate bool, msg amqp.Publishing) error
 }
 
-//AmqpConsumerInterface for task
+//AmqpConsumerInterface interface for task
 type AmqpConsumerInterface interface {
 	Destroy() error
 	Start() error
@@ -51,7 +51,6 @@ type amqpConsumer struct {
 	channel       extAmqpChannelInterface
 	deliveryChan  <-chan amqp.Delivery
 	options       *AmqpConsumerOptions
-	requestChan   chan interface{}
 	pool          poolInterface
 	notifyChannel chan *amqp.Error
 	notify        chan error
@@ -65,10 +64,6 @@ func (consumer *amqpConsumer) setName(name string) {
 
 func (consumer *amqpConsumer) getName() string {
 	return consumer.name
-}
-
-func (consumer *amqpConsumer) setRequestChan(requestChan chan interface{}) {
-	consumer.requestChan = requestChan
 }
 
 func (consumer *amqpConsumer) setChannel(channel extAmqpChannelInterface) {

@@ -231,8 +231,8 @@ func (broker *amqpBroker) startSentinel(conn amqpConnectionInterface) (err error
 		return
 	}
 
-	Logger.Debug(fmt.Sprintf(fmt.Sprintf("%s restarted", t)))
-	Logger.Info(fmt.Sprintf(fmt.Sprintf("reconnection process for [%s connection] completed successfully", ioType)))
+	Logger.Debug(fmt.Sprintf("%s restarted", t))
+	Logger.Info(fmt.Sprintf("reconnection process for [%s connection] completed successfully", ioType))
 	return
 }
 

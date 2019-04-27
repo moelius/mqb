@@ -44,15 +44,15 @@ func main() {
 	if err!=nil{
 		log.Fatal(err)
 	}
-	server.WithLogger(mqb.NewLoggerLog(mqb.InfoLevel))
+	server.WithLogger(mqb.NewLoggerZap(mqb.DebugLevel))
 	consumerOptions := &mqb.AmqpConsumerOptions{
 		AutoAck:        true,
 		ChannelOptions: &mqb.AmqpChannelOptions{Exchange: "rpc", ExchangeType: mqb.AmqpExchangeDirect},
 		BindingOptions: &mqb.AmqpBindingOptions{Key: "request", Queue: &mqb.AmqpQueueOptions{Name: "rpc.request"}},
-		QosOptions:     &mqb.AmqpQosOptions{PrefetchCount: 500},
+		QosOptions:     &mqb.AmqpQosOptions{PrefetchCount: 100},
 	}
 
-	_, err = server.NewConsumer(context.Background(), consumerOptions, RPCallback, mqb.CallbackMaxWorkers(100))
+	_, err = server.NewConsumer(context.Background(), consumerOptions, RPCallback, mqb.CallbackMaxWorkers(10))
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,4 +1,4 @@
-.PHONY: fmt lint gometalint test
+.PHONY: fmt lint cilint test
 
 fmt:
 	go fmt $(go list ./... | grep -v /vendor/)
@@ -9,5 +9,5 @@ test:
 lint:
 	golint ./... | sed '/^vendor/ d' | sed '/^_examples/ d'
 
-gometalint:
-	gometalinter.v2 ./... | sed '/^vendor/ d' | sed '/^_examples/ d'
+cilint:
+	golangci-lint run ./... | sed '/^vendor/ d' | sed '/^_examples/ d'
