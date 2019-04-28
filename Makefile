@@ -1,4 +1,6 @@
-.PHONY: fmt lint cilint test
+.PHONY: fmt test lint cilint
+
+all: fmt test lint cilint
 
 fmt:
 	go fmt $(go list ./... | grep -v /vendor/)
@@ -11,3 +13,6 @@ lint:
 
 cilint:
 	golangci-lint run ./... | sed '/^vendor/ d' | sed '/^_examples/ d'
+
+generate:
+	go generate ./...

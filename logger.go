@@ -58,11 +58,17 @@ type LoggerInterface interface {
 	Error(msg string)
 	Panic(msg string)
 	Fatal(msg string)
+	GetLevel() Level
 }
 
 //LoggerLog standard log implementation
 type LoggerLog struct {
 	level Level
+}
+
+//GetLevel get logger level
+func (l *LoggerLog) GetLevel() Level {
+	return l.level
 }
 
 //NewLoggerLog creates new standard logger
@@ -118,6 +124,7 @@ func (l *LoggerLog) Panic(msg string) {
 //LoggerZap go.uber.org/zap logging library implementation
 type LoggerZap struct {
 	logger *zap.Logger
+	level  Level
 }
 
 //NewLoggerZap creates new zap logger
@@ -126,7 +133,12 @@ func NewLoggerZap(level Level) LoggerInterface {
 	consoleErrors := zapcore.Lock(os.Stderr)
 	core := zapcore.NewTee(zapcore.NewCore(consoleEncoder, consoleErrors, zap.LevelEnablerFunc(func(lvl zapcore.Level) bool { return lvl >= zapMqbLevelMap[level] })))
 	logger := zap.New(core).Named(loggerName)
-	return &LoggerZap{logger: logger}
+	return &LoggerZap{logger: logger, level: level}
+}
+
+//GetLevel get logger level
+func (l *LoggerZap) GetLevel() Level {
+	return l.level
 }
 
 //Debug log with level DebugLevel

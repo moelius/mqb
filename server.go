@@ -11,7 +11,7 @@ import (
 )
 
 //Logger logger interface
-var Logger LoggerInterface
+var Logger = NewLoggerLog(InfoLevel)
 
 //CallbackOption callback option func
 type CallbackOption func(options *CallbackOptions)
@@ -56,11 +56,14 @@ func NewServer(ctx context.Context, brokerOptions ...BrokerOption) (server *Serv
 	server.WithLogger(NewLoggerLog(InfoLevel))
 
 	server.ctx = ctx
-	if strings.HasPrefix(opts.url, "amqp://") {
+
+	switch {
+	case strings.HasPrefix(opts.url, "amqp://"):
 		server.broker = newAmqpBroker()
-	} else {
+	default:
 		return nil, fmt.Errorf("unknown transport url: [%s]", opts.url)
 	}
+
 	if err = configure(server.broker, opts); err != nil {
 		return
 	}
@@ -81,13 +84,12 @@ func (server *Server) NewConsumer(ctx context.Context, consumerOptions interface
 	for _, o := range callbackOptions {
 		o(&opts)
 	}
-	broker := server.getBroker()
-	consumer, err = newConsumer(ctx, broker, consumerOptions, newPool(callback, opts.MaxWorkers, opts.Args))
+	consumer, err = newConsumer(ctx, server.getBroker(), consumerOptions, newPool(callback, opts.MaxWorkers, opts.Args))
 	if err != nil || !server.started {
 		return
 	}
 	if err = consumer.getPool().start(); err != nil {
-		return
+		return nil, err
 	}
 	if err = startConsumer(server.getBroker(), consumer.getName()); err != nil {
 		return nil, err
@@ -107,8 +109,7 @@ func (server *Server) ListenAndServe() (err error) {
 	if err = server.Serve(); err != nil {
 		return
 	}
-	server.signalHandler()
-	return
+	return server.signalHandler()
 }
 
 //Serve starts server
@@ -141,7 +142,7 @@ func (server *Server) GetSignal() chan os.Signal {
 	return server.osSig
 }
 
-func (server *Server) signalHandler() {
+func (server *Server) signalHandler() (err error) {
 	sig := server.GetSignal()
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -149,23 +150,23 @@ func (server *Server) signalHandler() {
 		for {
 			select {
 			case <-sig:
-				if err := server.Stop(); err != nil {
-					Logger.Error(fmt.Sprintf("server was not gracefully stopped with error=[%s]", err))
+				if e := server.Stop(); e != nil {
+					err = fmt.Errorf("server was not gracefully stopped with error=[%s]", e)
 					wg.Done()
 					return
 				}
 				Logger.Info("server was gracefully stopped")
 				wg.Done()
 				return
-			case err := <-server.broker.getNotify():
-				if err != nil {
-					Logger.Error(fmt.Sprintf("server down with transport error=[%s]", err))
+			case e := <-server.broker.getNotify():
+				if e != nil {
+					err = fmt.Errorf("server down with transport error=[%s]", e)
 				}
 				wg.Done()
 				return
 			case <-server.ctx.Done():
-				if err := server.Stop(); err != nil {
-					Logger.Error(fmt.Sprintf("server was not gracefully stopped with error=[%s]", err))
+				if e := server.Stop(); e != nil {
+					err = fmt.Errorf("server was not gracefully stopped with error=[%s]", e)
 					wg.Done()
 					return
 				}
@@ -176,6 +177,7 @@ func (server *Server) signalHandler() {
 		}
 	}()
 	wg.Wait()
+	return
 }
 
 func (server *Server) getBroker() BrokerInterface {

@@ -1,5 +1,7 @@
 package mqb
 
+//go:generate mockgen -source=broker.go -destination=mock_broker_test.go -package=mqb BrokerInterface ConsumerInterface
+
 import (
 	"context"
 	"time"

@@ -1,6 +1,9 @@
 package mqb
 
+//go:generate mockgen -source=pool.go -destination=mock_pool_test.go -package=mqb PoolInterface
+
 import (
+	"fmt"
 	"reflect"
 	"sync"
 )
@@ -59,10 +62,17 @@ func (pool *pool) start() (err error) {
 						wg.Done()
 						<-sema
 					}()
-					e := pool.callback.Call(append([]reflect.Value{reflect.ValueOf(task)}, pool.args...))
-					if e != nil && e[0].Interface() != nil {
-						Logger.Error(e[0].Interface().(error).Error())
-					}
+					func() {
+						defer func() {
+							if r := recover(); r != nil {
+								Logger.Error(fmt.Sprintf("panic was recovered=[%v]", r))
+							}
+						}()
+						e := pool.callback.Call(append([]reflect.Value{reflect.ValueOf(task)}, pool.args...))
+						if e != nil && e[0].Interface() != nil {
+							Logger.Error(e[0].Interface().(error).Error())
+						}
+					}()
 				}()
 			case <-pool.stopChan:
 				wg.Wait()
