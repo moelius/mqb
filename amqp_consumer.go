@@ -255,14 +255,10 @@ func (consumer *amqpConsumer) consume() {
 				if !ok {
 					continue Loop
 				}
-				task := &AmqpTask{
-					Broker:   consumer.broker,
-					Consumer: consumer,
-					Delivery: delivery,
-				}
+				var reqChan chan interface{}
 				//handle situation when two or more consumers process one queue with different routing keys
 				if delivery.ConsumerTag == consumer.options.ConsumerTag {
-					consumer.getPool().getRequestChan() <- task
+					reqChan = consumer.getPool().getRequestChan()
 				} else {
 					cName := amqpConsumerName(delivery.Exchange, delivery.RoutingKey)
 					anotherConsumer, ok := consumer.broker.getConsumer(cName)
@@ -270,9 +266,9 @@ func (consumer *amqpConsumer) consume() {
 						Logger.Warning(fmt.Sprintf("have no consumer in registry with name=[%s]", cName))
 						continue Loop
 					}
-					//send to pool
-					anotherConsumer.getPool().getRequestChan() <- task
+					reqChan = anotherConsumer.getPool().getRequestChan()
 				}
+				reqChan <- &AmqpTask{Broker: consumer.broker, Consumer: consumer, Delivery: delivery}
 			case <-consumer.getNotify():
 				break Loop
 			case <-consumer.ctx.Done():

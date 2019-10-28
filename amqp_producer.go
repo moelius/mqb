@@ -82,8 +82,7 @@ func (producer *amqpProducer) start() (err error) {
 	producer.produce()
 	producer.sentinel()
 	producer.setState(opened)
-	//TODO enable after creating a good logger with levels. DEBUG
-	//log.Println(fmt.Sprintf("producer started: name=[%s]", producer.name))
+	Logger.Debug(fmt.Sprintf("producer started: name=[%s]", producer.name))
 	return
 }
 
@@ -98,8 +97,7 @@ func (producer *amqpProducer) sentinel() {
 	go func() {
 		<-producer.channel.NotifyClose(producer.notifyChannel)
 		producer.setState(closed)
-		//TODO enable after creating a good logger with levels. DEBUG
-		//log.Println(fmt.Sprintf("producer stopped: name=[%s]", producer.name))
+		Logger.Debug(fmt.Sprintf("producer stopped: name=[%s]", producer.name))
 		producer.getNotify() <- nil
 		<-producer.getNotify()
 	}()

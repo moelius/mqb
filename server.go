@@ -76,7 +76,7 @@ func (server *Server) WithLogger(logger LoggerInterface) {
 	Logger = logger
 }
 
-//NewConsumer make new amqpConsumer
+//NewConsumer make new consumer
 func (server *Server) NewConsumer(ctx context.Context, consumerOptions interface{}, callback interface{}, callbackOptions ...CallbackOption) (consumer ConsumerInterface, err error) {
 	server.Lock()
 	defer server.Unlock()
@@ -144,39 +144,38 @@ func (server *Server) GetSignal() chan os.Signal {
 
 func (server *Server) signalHandler() (err error) {
 	sig := server.GetSignal()
-	wg := sync.WaitGroup{}
-	wg.Add(1)
+	ch := make(chan struct{}, 0)
 	go func() {
 		for {
 			select {
 			case <-sig:
 				if e := server.Stop(); e != nil {
 					err = fmt.Errorf("server was not gracefully stopped with error=[%s]", e)
-					wg.Done()
+					close(ch)
 					return
 				}
 				Logger.Info("server was gracefully stopped")
-				wg.Done()
+				close(ch)
 				return
 			case e := <-server.broker.getNotify():
 				if e != nil {
 					err = fmt.Errorf("server down with transport error=[%s]", e)
 				}
-				wg.Done()
+				close(ch)
 				return
 			case <-server.ctx.Done():
 				if e := server.Stop(); e != nil {
 					err = fmt.Errorf("server was not gracefully stopped with error=[%s]", e)
-					wg.Done()
+					close(ch)
 					return
 				}
 				Logger.Info(fmt.Sprintf("server was gracefully stopped with [%s]", server.ctx.Err()))
-				wg.Done()
+				close(ch)
 				return
 			}
 		}
 	}()
-	wg.Wait()
+	<-ch
 	return
 }
 

@@ -9,8 +9,8 @@ import (
 	"time"
 )
 
-const workersCount = 10
-const messagesCount = 1000
+const workersCount = 4
+const messagesCount = 10000
 
 var onResponseCallback = func(task *mqb.AmqpTask, corrID string, results chan []byte) error {
 	if corrID != task.Delivery.CorrelationId {
@@ -29,7 +29,6 @@ func RPCall(ctx context.Context, server *mqb.Server, request *mqb.AmqpRequest, r
 		return r, nil
 	case <-ctx.Done():
 		return nil, ctx.Err()
-
 	}
 }
 
